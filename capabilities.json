@@ -7,51 +7,33 @@
       }
     ],
     "objects": {
-        "dataPoint": {
-            "displayName": "Data colors",
+      "enableAxis": {
+            "displayName": "URL",
             "properties": {
-                "defaultColor": {
-                    "displayName": "Default color",
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "showAllDataPoints": {
-                    "displayName": "Show all",
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "fill": {
-                    "displayName": "Fill",
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "fillRule": {
-                    "displayName": "Color saturation",
-                    "type": {
-                        "fill": {}
-                    }
-                },
-                 "fontSize": {
-                    "displayName": "Text Size",
-                    "type": {
-                        "formatting": {
-                            "fontSize": true
-                        }
-                    }
+                "my": {
+                    "displayName": "URL",
+                    "type": { "text": true }
                 }
             }
-        }
+         },
+         "xAxis": {
+            "displayName": "xAxis_Label",
+            "properties": {
+                "xlabel": {
+                    "displayName": "xAxis_Label",
+                    "type": { "text": true }
+                }
+            }
+         },
+         "yAxis": {
+            "displayName": "yAxis_Label",
+            "properties": {
+                "ylabel": {
+                    "displayName": "yAxis_Label",
+                    "type": { "text": true }
+                }
+            }
+         }
     },
     "dataViewMappings": [
       {

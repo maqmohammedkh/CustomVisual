@@ -14,5 +14,5 @@
     "typings/index.d.ts",
     "src/settings.ts",
     "src/visual.ts"
-  ]
+      ]
 }

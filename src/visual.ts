@@ -4,16 +4,26 @@ module powerbi.extensibility.visual {
         dataPoints: BarChartDataPoints[];
         dataMax: number;
         dataMin: number;
+        settings: BarChartSettings;
     };
     interface BarChartDataPoints {
         mx: number;
         mn: number;
         cen: number;
         category: string;
-        color: string ;
     };
 
-
+    interface BarChartSettings {
+        enableAxis: {
+            my: string;
+        },
+        xAxis: {
+            xlabel: string;
+        },
+        yAxis: {
+            ylabel: string;
+        };
+    }
 
     export class Visual implements IVisual {
 
@@ -23,6 +33,8 @@ module powerbi.extensibility.visual {
         private bars: d3.Selection<SVGElement>;
         private xAxis: d3.Selection<SVGAElement>;
         private yAxis: d3.Selection<SVGAElement>;
+        private barChartSettings: BarChartSettings;
+
 
         constructor(options: VisualConstructorOptions) {
             this.host = options.host;
@@ -39,20 +51,94 @@ module powerbi.extensibility.visual {
             this.yAxis = svg.append('g')
                 .classed('Axis', true);
 
-          
-
+            this.barChartSettings = {     
+                enableAxis: {
+                    my: "https://api.myjson.com/bins/i2fm9",
+                }, 
+                xAxis: {
+                    xlabel:"Date",
+                }  
+                , 
+                yAxis: {
+                    ylabel:"NPS Score",
+                } 
+            };    
+                
         }
 
-        public update(options: VisualUpdateOptions) {
+    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
+            let objectName = options.objectName;
+            let objectEnumeration: VisualObjectInstance[] = [];
+ 
+            switch(objectName) {
+                case 'enableAxis':
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            my: this.barChartSettings.enableAxis.my,
+                        },
+                            selector: null});
+                            break ;
 
+                case 'xAxis':
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            xlabel: this.barChartSettings.xAxis.xlabel,
+                        },
+                            selector: null});
+                            break ;
+                 case 'yAxis':
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            ylabel: this.barChartSettings.yAxis.ylabel,
+                        },
+                            selector: null});
+                            break 
+            }; 
+            return objectEnumeration
+        ;}
+
+    public getValue<T>(objects: DataViewObjects, objectName: string, propertyName: string, defaultValue: T ): T {
+        if (objects) {
+            let object = objects[objectName];
+            if (object) {
+                let property: T = <T>object[propertyName];
+                if (property !== undefined) {
+                    return property;
+                }
+            }
+        }
+        return defaultValue;
+    }
+
+
+        public update(options: VisualUpdateOptions) {
+        
+            this.barChartSettings = {
+                 enableAxis:{
+                    my: this.getValue(options.dataViews[0].metadata.objects,"enableAxis","my", this.barChartSettings.enableAxis.my),
+                }
+            ,
+            xAxis:{
+                    xlabel: this.getValue(options.dataViews[0].metadata.objects,"xAxis","xlabel", this.barChartSettings.xAxis.xlabel),
+                }
+                ,
+            yAxis:{
+                    ylabel: this.getValue(options.dataViews[0].metadata.objects,"yAxis","ylabel", this.barChartSettings.yAxis.ylabel),
+                }
+            }
+
+           
             let query = this.getViewModel(options);
             let url = 'http://AZVOCSTAT01:8085/Home/FetchNPS' + query;
 
-            console.log(url);
+       
             let margin = { top: 3, bottom: 35, left: 42, right: 20 };
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'https://api.myjson.com/bins/i2fm9' , false);
+            xhr.open('GET', this.barChartSettings.enableAxis.my , false);
             var chartData;
             xhr.onload = function () {
                 if (xhr.status === 200) {
@@ -60,69 +146,47 @@ module powerbi.extensibility.visual {
                 }
             };
             xhr.send();
-            console.log(chartData);
 
             let i: number;
             let testData: BarChartDataPoints[] = new Array();
-            let colorPalette: IColorPalette = this.host.colorPalette;
 
             var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             
-            //debugger;
+          
             for (i = 0; i < chartData.length; i++) {
-
                 let v: string = chartData[i]["MonthName"];
-
                 let sp1 = v.split('-');
-
                 let yr = sp1[0];
-
                 let mon: string;
-
                 if (sp1[1].substr(0, 1) == "0")
-
                     mon = monthNames[parseInt(sp1[1].substr(1, 1)) - 1];
-
                 else
-
                     mon = monthNames[parseInt(sp1[1].substr(0, 2)) - 1];
-
-
-
                 let fy = mon + " FY" + yr.substr(2, 2);
-
-                //Jan FY16    
-
                 let nbar = {
-
                     mx: chartData[i]["High"],
-
                     mn: chartData[i]["Low"],
-
                     cen: chartData[i]["NPS"],
-
-                    category: fy,
-
-                    color: colorPalette.getColor(chartData[i]["MonthName"]).value
-
+                    category: fy
                 };
-
                 testData.push(nbar);
-
-
             }
 
             let width = options.viewport.width;
             let height = options.viewport.height;
 
-
+               
             let viewModel: BarChartViewModel = {
                 dataPoints: testData,
                 dataMax: d3.max(testData, x => x.mx),
-                dataMin: d3.min(testData, x => x.mn)
+                dataMin: d3.min(testData, x => x.mn),
+                settings: this.barChartSettings 
             };
+
+            console.log(viewModel.settings.enableAxis.my) ;
+
+            let settings = this.barChartSettings;
 
             this.svg.attr({
                 width: width,
@@ -167,14 +231,14 @@ module powerbi.extensibility.visual {
                 .attr("id", "dateText")
                 .attr("font-size", "15")
                 .style("text-anchor", "middle")
-                .text("Date");
+                .text(this.barChartSettings.xAxis.xlabel);
 
             this.svg.append("text")
                 .attr("transform", "translate(" + (margin.bottom / 2) + "," + (height / 2) + ")rotate(-90)")
                 .attr("id","NPSText")
                 .style("text-anchor", "middle")
                 .attr("font-size", "15")                
-                .text("NPS Score");
+                .text(this.barChartSettings.yAxis.ylabel);
 
 
             this.svg.selectAll('rect').remove() ;
@@ -257,21 +321,13 @@ module powerbi.extensibility.visual {
                     "id": "centreCircle"
                 }); 
 
-            //this.svg.data(viewModel.dataPoints).append('text')
-            //    .attr("x", d => xScale(d.category) + width / (2 * testData.length))
-            //    .attr("y", d => yScale(d.mx+1))
-            //    .attr("font-size", 12)
-            //    .text(d => d.mx.toFixed(2));
-
 
             var texts = this.svg.selectAll(".bartext")
                 .data(testData)
                 .enter();
 
             
-            //this.svg.selectAll(".bartext")
-            //    .data(testData)
-            //    .enter()
+
             texts.append("text")
                 .attr("id", "maxValue")
                 .attr("class", "bartext")
@@ -290,17 +346,16 @@ module powerbi.extensibility.visual {
 
            
 
-            //this.svg.selectall(".bartext")
-            //    .data(testdata)
-            //    .enter()
+
             texts.append("text")
                  .attr("id", "cenValue")
                  .attr("class", "bartext")
                  .attr("text-anchor", "middle")
-                 .attr("fill", "black")
+                 .attr("font-weight", "bold")
+                 .attr("fill", "orange")
                 .attr("font-size", 12 * height * 0.0018)
                  .attr("x", function (d, i) {
-                    return xScale(d.category) + width / (2 * testData.length) + width*0.017;
+                    return xScale(d.category) + width / (2 * testData.length) + width/(testData.length*5);
                  })
                  .attr("y", function (d, i) {
                     return yScale(d.cen);
@@ -325,15 +380,9 @@ module powerbi.extensibility.visual {
                 .remove();
 
 
-        for (let y = 0, len = testData.length; y < len; y++) {
-            let x = testData[y].mx;
-            let defaultColor: Fill = {
-                solid: {
-                    color: colorPalette.getColor(x+' ').value
-                }
-            };
-        }
     }
+
+       
 
         private getViewModel(options: VisualUpdateOptions): string {
 
@@ -349,6 +398,7 @@ module powerbi.extensibility.visual {
             let view = dv[0].table;
             let categories = view.columns[0];
             let values = view.rows[0];
+            
             let i: number;
 
 
